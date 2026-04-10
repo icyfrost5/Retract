@@ -1,6 +1,6 @@
 import asyncio
-
 import reflex as rx
+
 
 
 class State(rx.State):
@@ -16,9 +16,12 @@ class State(rx.State):
 @rx.page(on_load=State.skeleton_wait_time)
 def index():
     # Welcome Page (Index)
-    return rx.container(
-        rx.skeleton(rx.color_mode.button(position="top-right"), loading=State.Loading),
-        sidebar()
+    return rx.hstack(
+        sidebar(),
+        rx.box(
+            rx.skeleton(rx.color_mode.button(position="top-right"), loading=State.Loading),
+            margin_left="200px"
+        )
     )
 
 
@@ -33,14 +36,21 @@ def sidebar_link(text, icon, url, ):
 def sidebar():
     return rx.box(
         rx.vstack(
-            sidebar_link("Home", "layout-dashboard", "/"),
-            width="20%",
+            rx.vstack(
+                sidebar_link("Home", "layout-dashboard", "/"),
+                spacing="5",
+                align="start"
+            ),
             spacing="5",
             bg=rx.color_mode_cond(light="rgb(240, 240, 240)", dark="rgb(27, 27, 27)"),
             align="start",
-
-        ),
-
+            position="fixed",
+            padding_y=".75em",
+            padding_x="1em",
+            justify = "start",
+            flex_wrap = "wrap",
+            width="200px"
+        )
     )
 
 
