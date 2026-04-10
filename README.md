@@ -1,2 +1,2 @@
 # Retract
-Dohicky I built for learning Reflex
+Dohicky I am building to learn reflex
