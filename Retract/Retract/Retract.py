@@ -28,9 +28,9 @@ def index():
 def sidebar_link(text, icon, url, ):
     return rx.link(rx.hstack(rx.icon(icon, color=rx.color_mode_cond(light="rgb(0, 0, 0)", dark="rgb(255, 255, 255)")),
                              rx.text(text, size="5",
-                                     color=rx.color_mode_cond(light="rgb(0, 0, 0)", dark="rgb(255, 255, 255)")),
+                             color=rx.color_mode_cond(light="rgb(0, 0, 0)", dark="rgb(255, 255, 255)")),
                              align="center", width="100%", style={
-            "_hover": {"bg": rx.color_mode_cond(light="rgb(220, 220, 220)", dark="rgb(50, 50, 50)")}}), href=url)
+                                "_hover": {"bg": rx.color_mode_cond(light="rgb(220, 220, 220)", dark="rgb(50, 50, 50)")}}), href=url)
 
 
 def sidebar():
