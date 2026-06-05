@@ -1,9 +1,40 @@
-import asyncio
 import reflex as rx
+import subprocess
+import os
 
 
-class State(rx.State):
-    pass
+
+class DownloaderChecks(rx.State):
+    pathcheck = False
+    nohasytdlppath = False
+    failpathdownload = False
+    Disable = False
+    Link = "Failed to download using pip, please ", rx.link("download", href="https://github.com/yt-dlp/yt-dlp/releases/download/2026.03.17/yt-dlp.exe") ," it and put it in the assets directory"
+
+    def detectionmode(self, pathcheck):
+        self.pathcheck = pathcheck
+
+    def check_for_ytdlp_path(self):
+        try:
+            self.Disable = True
+            os.chdir('assets')
+            subprocess.run(["yt-dlp", "--update"], check=True, capture_output=True, text=True)
+            os.chdir('..')
+            self.nohasytdlppath = False
+            self.Disable = False
+        except (FileNotFoundError, subprocess.CalledProcessError):
+            os.chdir('..')
+            self.nohasytdlppath = True
+            self.Disable = False
+    def install_ytdlp_python(self):
+        try:
+            subprocess.run(["pip", "install", "yt-dlp"], check=True, capture_output=True, text=True)
+            self.nohasytdlppath = False
+            rx.toast.success("Successfully downloaded yt-dlp to python")
+        except (FileNotFoundError, subprocess.CalledProcessError):
+            self.failpathdownload = True
+            rx.toast.error(self.Link)
+
 
 def sidebar_link(text, icon, url, size, width):
     return rx.link(rx.hstack(rx.icon(icon, color=rx.color_mode_cond(light="#0A0F1E", dark="#C8A96E")),
@@ -17,7 +48,7 @@ def sidebar():
         rx.vstack(
             rx.vstack(
                 sidebar_link("Home", "layout-dashboard", "/", '5', "130%"),
-                sidebar_link("Image Generator", "image_plus", "/images", '4', "100%"),
+                sidebar_link("Downloader", "download", "/downloader", '3', "100%"),
                 spacing="5",
                 align="start"
             ),
@@ -45,14 +76,25 @@ def index():
             height="100vh"
         ),
     )
-def images():
+
+@rx.page(on_load=DownloaderChecks.check_for_ytdlp_path)
+def downloader():
     return rx.hstack(
         sidebar(),
         rx.box(
-            rx.button(icon="settings", position="top-right",),
+            rx.dialog.root(
+                rx.dialog.content(
+                    rx.dialog.title("Warning"),
+                    rx.dialog.description(""),
+                    rx.dialog("yt-dlp is not detected and is required for this to work! Please either return to home, ", rx.link("download", href="https://github.com/yt-dlp/yt-dlp/releases/download/2026.03.17/yt-dlp.exe") ," it and put it in the assets directory, or install it using python if your python packages are in PATH."),
+                    rx.dialog.close(rx.button("Return to home", on_click=rx.redirect("/")), rx.spacer(), rx.button("Install via python", on_click=DownloaderChecks.install_ytdlp_python, disabled=DownloaderChecks.Disable)),
+                ),
+                open=DownloaderChecks.nohasytdlppath,
+            ),
             bg=rx.color_mode_cond(light="#cceffa", dark="#111111"),
+            padding_left="135px",
             width="100%",
-            height="100vh"
+            height="100vh",
         )
     )
 
@@ -60,4 +102,4 @@ def images():
 
 app = rx.App()
 app.add_page(index, "/")
-app.add_page(images, "/images")
+app.add_page(downloader, "/downloader")
