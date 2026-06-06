@@ -1,39 +1,47 @@
+import asyncio
+
 import reflex as rx
 import subprocess
 import os
 
 
 
-class DownloaderChecks(rx.State):
-    pathcheck = False
+def installcommand():
+    subprocess.run(["python", "-m", "pip", "install", "yt-dlp"], check=True, capture_output=True, text=True)
+
+
+class DownloaderState(rx.State):
     nohasytdlppath = False
     failpathdownload = False
     Disable = False
-    Link = "Failed to download using pip, please ", rx.link("download", href="https://github.com/yt-dlp/yt-dlp/releases/download/2026.03.17/yt-dlp.exe") ," it and put it in the assets directory"
+    text = "Install using python"
+    Link = "Failed to download using pip, please ", rx.link("download", href="https://github.com/yt-dlp/yt-dlp/releases/download/2026.03.17/yt-dlp.exe") , " it and put it in the assets directory"
 
-    def detectionmode(self, pathcheck):
-        self.pathcheck = pathcheck
-
-    def check_for_ytdlp_path(self):
+    async def check_for_ytdlp_path(self):
         try:
-            self.Disable = True
             os.chdir('assets')
             subprocess.run(["yt-dlp", "--update"], check=True, capture_output=True, text=True)
             os.chdir('..')
             self.nohasytdlppath = False
-            self.Disable = False
         except (FileNotFoundError, subprocess.CalledProcessError):
             os.chdir('..')
             self.nohasytdlppath = True
-            self.Disable = False
-    def install_ytdlp_python(self):
+    async def install_ytdlp_python(self):
         try:
-            subprocess.run(["pip", "install", "yt-dlp"], check=True, capture_output=True, text=True)
+            self.Disable = True
+            self.text = "Installing..."
+            yield
+            await asyncio.to_thread(installcommand)
             self.nohasytdlppath = False
-            rx.toast.success("Successfully downloaded yt-dlp to python")
-        except (FileNotFoundError, subprocess.CalledProcessError):
+            self.Disable = False
+            self.text = "Success!"
+            yield rx.toast.success("Successfully installed yt-dlp using python")
+        except (FileNotFoundError, subprocess.CalledProcessError, ModuleNotFoundError):
             self.failpathdownload = True
-            rx.toast.error(self.Link)
+            self.text = "Failed to install"
+            self.Disable = False
+            yield rx.toast.error(self.Link)
+        self.text = "Install using python"
 
 
 def sidebar_link(text, icon, url, size, width):
@@ -77,7 +85,7 @@ def index():
         ),
     )
 
-@rx.page(on_load=DownloaderChecks.check_for_ytdlp_path)
+@rx.page(on_load=DownloaderState.check_for_ytdlp_path)
 def downloader():
     return rx.hstack(
         sidebar(),
@@ -87,9 +95,9 @@ def downloader():
                     rx.dialog.title("Warning"),
                     rx.dialog.description(""),
                     rx.dialog("yt-dlp is not detected and is required for this to work! Please either return to home, ", rx.link("download", href="https://github.com/yt-dlp/yt-dlp/releases/download/2026.03.17/yt-dlp.exe") ," it and put it in the assets directory, or install it using python if your python packages are in PATH."),
-                    rx.dialog.close(rx.button("Return to home", on_click=rx.redirect("/")), rx.spacer(), rx.button("Install via python", on_click=DownloaderChecks.install_ytdlp_python, disabled=DownloaderChecks.Disable)),
+                    rx.dialog.close(rx.button("Return to home", on_click=rx.redirect("/")), rx.spacer(), rx.button(DownloaderState.text, rx.spinner(loading=DownloaderState.Disable), on_click=DownloaderState.install_ytdlp_python)),
                 ),
-                open=DownloaderChecks.nohasytdlppath,
+                open=DownloaderState.nohasytdlppath,
             ),
             bg=rx.color_mode_cond(light="#cceffa", dark="#111111"),
             padding_left="135px",
